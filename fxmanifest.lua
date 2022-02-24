@@ -10,7 +10,13 @@ version '1.0.5'
 
 
 client_scripts {
-    'client/client.lua'
+    '@PolyZone/client.lua',
+	'@PolyZone/BoxZone.lua',
+	'@PolyZone/EntityZone.lua',
+	'@PolyZone/CircleZone.lua',
+	'@PolyZone/ComboZone.lua',
+    'client/client.lua',
+    'client/mdzones.lua'
 }
 
 server_scripts {
@@ -18,7 +24,7 @@ server_scripts {
 }
 
 shared_scripts {
-    '@qb-core/import.lua',
+    -- '@qb-core/import.lua',
     'config.lua'
 } 
 

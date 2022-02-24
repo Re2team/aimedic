@@ -1,9 +1,11 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local Active = false
-local test = nil
-local test1 = nil
+local ambulanceVehicle = nil
+local driverPed = nil
 local spam = true
+
+local intheHospitalWay=false
 
  
 
@@ -64,29 +66,78 @@ function SpawnVehicle(x, y, z)
 
 		PlaySoundFrontend(-1, "Text_Arrive_Tone", "Phone_SoundSet_Default", 1)
 		Wait(2000)
-		TaskVehicleDriveToCoord(mechPed, mechVeh, loc.x, loc.y, loc.z, 20.0, 0, GetEntityModel(mechVeh), 524863, 2.0)
-		test = mechVeh
-		test1 = mechPed
+		TaskVehicleDriveToCoord(mechPed, mechVeh, loc.x, loc.y, loc.z, 80.0, 0, GetEntityModel(mechVeh), 524863, 2.0)
+		SetVehicleSiren(mechVeh,true);
+		ambulanceVehicle = mechVeh
+		driverPed = mechPed
 		Active = true
     end
 end
+
+   
+
+Citizen.CreateThread(function()
+	local mdBoxZone=PolyZone:Create({
+		vector2(298.06692504882, -581.3480834961),
+		vector2(289.25625610352, -579.44018554688),
+		vector2(283.44482421875, -595.53747558594),
+		vector2(292.4313659668, -597.95672607422)
+	  }, {
+		name="MDNPC REVIVE",
+		minZ = 41.98,
+		maxZ = 45.98,
+		debugPoly=true
+	  })
+    local insidePinkCage = false
+	mdBoxZone:onPointInOut(PolyZone.getPlayerPosition, function(isPointInside, point)
+		if isPointInside and intheHospitalWay then
+			TriggerEvent("hospital:client:npcHospital")
+			RemovePedElegantly(driverPed)
+			DeleteEntity(ambulanceVehicle)
+			spam = true
+			intheHospitalWay=false
+		end
+	end)
+
+    local mdPaletoZone=PolyZone:Create({
+  		vector2(-228.0418395996, 6326.7231445312),
+  		vector2(-231.95545959472, 6322.9194335938),
+  		vector2(-245.10649108886, 6336.1669921875),
+  		vector2(-241.05587768554, 6339.8071289062)
+	}, {
+  		name="MDPalletoNPC",
+  		minZ = 29.99,
+  		maxZ = 37.13,
+		debugPoly=true
+	})
+    mdPaletoZone:onPointInOut(PolyZone.getPlayerPosition, function(isPointInside, point)
+		if isPointInside and intheHospitalWay then
+			TriggerEvent("hospital:client:npcHospital")
+			RemovePedElegantly(driverPed)
+			DeleteEntity(ambulanceVehicle)
+			spam = true
+			intheHospitalWay=false
+		end
+	end)
+
+end)
 
 Citizen.CreateThread(function()
     while true do
       Citizen.Wait(200)
         if Active then
             local loc = GetEntityCoords(GetPlayerPed(-1))
-			local lc = GetEntityCoords(test)
-			local ld = GetEntityCoords(test1)
+			local lc = GetEntityCoords(ambulanceVehicle)
+			local ld = GetEntityCoords(driverPed)
             local dist = Vdist(loc.x, loc.y, loc.z, lc.x, lc.y, lc.z)
 			local dist1 = Vdist(loc.x, loc.y, loc.z, ld.x, ld.y, ld.z)
             if dist <= 10 then
 				if Active then
-					TaskGoToCoordAnyMeans(test1, loc.x, loc.y, loc.z, 1.0, 0, 0, 786603, 0xbf800000)
+					TaskGoToCoordAnyMeans(driverPed, loc.x, loc.y, loc.z, 10.0, 0, 0, 786603, 0xbf800000)
 				end
 				if dist1 <= 1 then 
 					Active = false
-					ClearPedTasksImmediately(test1)
+					ClearPedTasksImmediately(driverPed)
 					DoctorNPC()
 				end
             end
@@ -101,21 +152,39 @@ function DoctorNPC()
 		Citizen.Wait(1000)
 	end
 
-	TaskPlayAnim(test1, "mini@cpr@char_a@cpr_str","cpr_pumpchest",1.0, 1.0, -1, 9, 1.0, 0, 0, 0)
-	QBCore.Functions.Progressbar("revive_doc", "The medic is treating you", Config.ReviveTime, false, false, {
+	TaskPlayAnim(driverPed, "mini@cpr@char_a@cpr_str","cpr_pumpchest",1.0, 1.0, -1, 9, 1.0, 0, 0, 0)
+	QBCore.Functions.Progressbar("revive_doc", "Check Your Status", Config.ReviveTime, false, false, {
 		disableMovement = false,
 		disableCarMovement = false,
 		disableMouse = false,
 		disableCombat = true,
 	}, {}, {}, {}, function()
-		ClearPedTasks(test1)
+		ClearPedTasks(driverPed)
 		Citizen.Wait(500)
-        	TriggerEvent("hospital:client:Revive")
-		StopScreenEffect('DeathFailOut')	
-		Notify("Your treatment is complete, you have been charged: "..Config.Price, "success")
-		RemovePedElegantly(test1)
-		DeleteEntity(test)
-		spam = true
+		local ped = PlayerPedId()
+        	-- TriggerEvent("hospital:client:Revive")
+		local dragger = PlayerPedId()
+		SetEntityCoords(driverPed, GetOffsetFromEntityInWorldCoords(dragger, 0.0, 0.45, 0.0))
+		AttachEntityToEntity(dragger, driverPed, 11816, 0.45, 0.45, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+		local vehicleCoords = GetEntityCoords(ambulanceVehicle)
+		TaskGoToCoordAnyMeans(driverPed, vehicleCoords.x, vehicleCoords.y, vehicleCoords.z-3, 1.0, 0, 0, 786603, 0xbf800000)
+		SetPedIntoVehicle(ped, ambulanceVehicle, 2)
+		-- TaskEnterVehicle(driverPed,ambulanceVehicle,-1,0,1.0,1)
+		
+		local tempInd=1
+		local tempDis=10000000000
+		for index, value in ipairs(Config.mdLocations) do
+			local ourLocation = GetEntityCoords(driverPed)
+			local distance=CalculateTravelDistanceBetweenPoints(ourLocation.x,ourLocation.y,ourLocation.z,value.x,value.y,value.z);
+			if distance<tempDis then
+				tempInd=index
+				tempDis=distance
+			end
+		end
+		Wait(200)
+		local hospitalLocation =Config.mdLocations[tempInd]
+		TaskVehicleDriveToCoord(driverPed, ambulanceVehicle, hospitalLocation.x, hospitalLocation.y, hospitalLocation.z, 8gi0.0, 0, GetEntityModel(ambulanceVehicle), 524863, 2.0)
+		intheHospitalWay=true
 	end)
 end
 
@@ -123,3 +192,5 @@ end
 function Notify(msg, state)
     QBCore.Functions.Notify(msg, state)
 end
+
+
