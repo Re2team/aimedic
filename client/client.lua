@@ -183,7 +183,7 @@ function DoctorNPC()
 		end
 		Wait(200)
 		local hospitalLocation =Config.mdLocations[tempInd]
-		TaskVehicleDriveToCoord(driverPed, ambulanceVehicle, hospitalLocation.x, hospitalLocation.y, hospitalLocation.z, 8gi0.0, 0, GetEntityModel(ambulanceVehicle), 524863, 2.0)
+		TaskVehicleDriveToCoord(driverPed, ambulanceVehicle, hospitalLocation.x, hospitalLocation.y, hospitalLocation.z, 80.0, 0, GetEntityModel(ambulanceVehicle), 524863, 2.0)
 		intheHospitalWay=true
 	end)
 end
